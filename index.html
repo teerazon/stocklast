@@ -204,6 +204,7 @@
           <i data-lucide="package" class="w-4 h-4 text-white"></i>
         </div>
         <span class="font-semibold text-base tracking-tight">StockFlow</span>
+        <span id="sync-dot" class="w-2 h-2 rounded-full bg-slate-500" title="Offline"></span>
       </div>
       <div class="flex items-center gap-2">
         <button onclick="openNotifications()" class="w-9 h-9 rounded-full bg-surface-800 flex items-center justify-center relative">
@@ -354,15 +355,9 @@
         </div>
       </div>
       
-      <div class="grid grid-cols-2 gap-2">
-        <div>
-          <label class="text-xs text-slate-400 mb-1 block">ราคา (บาท)</label>
-          <input type="number" id="product-price" placeholder="0.00" class="input-field" />
-        </div>
-        <div>
-          <label class="text-xs text-slate-400 mb-1 block">หน่วย</label>
-          <input type="text" id="product-unit" placeholder="ชิ้น, กล่อง…" class="input-field" />
-        </div>
+      <div>
+        <label class="text-xs text-slate-400 mb-1 block">หน่วย</label>
+        <input type="text" id="product-unit" placeholder="ชิ้น, กล่อง, โหล…" class="input-field" />
       </div>
       
       <div>
@@ -483,14 +478,6 @@
       <h2 class="font-semibold text-lg mb-4">ตั้งค่า</h2>
       
       <div class="space-y-2 mb-4">
-        <div class="bg-surface-800 rounded-xl p-4">
-          <p class="text-xs text-slate-400 mb-1">Supabase URL</p>
-          <input type="text" id="setting-supabase-url" placeholder="https://xxx.supabase.co" class="input-field text-sm" />
-        </div>
-        <div class="bg-surface-800 rounded-xl p-4">
-          <p class="text-xs text-slate-400 mb-1">Supabase Anon Key</p>
-          <input type="password" id="setting-supabase-key" placeholder="eyJ…" class="input-field text-sm" />
-        </div>
         <div class="bg-surface-800 rounded-xl p-4">
           <p class="text-xs text-slate-400 mb-1">แจ้งเตือนเมื่อสต็อกต่ำกว่า (default)</p>
           <input type="number" id="setting-low-threshold" placeholder="5" class="input-field" />
