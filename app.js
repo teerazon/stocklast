@@ -12,8 +12,8 @@
 const CONFIG = {
   LOW_STOCK_DEFAULT: 5,
   DEBOUNCE_MS: 320,
-  SUPABASE_URL: '',
-  SUPABASE_KEY: '',
+  SUPABASE_URL: 'https://fbluqgovecrdacmnhzch.supabase.co',
+  SUPABASE_KEY: 'sb_publishable_xIQf4XXDdvy6tZ5kKM7yjg_8I0j2JnD',
 };
 
 const STATE = {
