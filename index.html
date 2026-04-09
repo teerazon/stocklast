@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="th" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0F172A" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="StockFlow" />
+  <title>StockFlow — Stock Management</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['IBM Plex Sans Thai', 'sans-serif'],
+            mono: ['IBM Plex Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              200: '#bfdbfe',
+              300: '#93c5fd',
+              400: '#60a5fa',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+            },
+            surface: {
+              50: '#f8fafc',
+              100: '#f1f5f9',
+              200: '#e2e8f0',
+              300: '#cbd5e1',
+              700: '#334155',
+              800: '#1e293b',
+              850: '#162032',
+              900: '#0f172a',
+              950: '#080f1a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { -webkit-tap-highlight-color: transparent; }
+    body { font-family: 'IBM Plex Sans Thai', sans-serif; overscroll-behavior: none; }
+    
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+    
+    /* Safe area */
+    .safe-bottom { padding-bottom: calc(env(safe-area-inset-bottom) + 5rem); }
+    .nav-safe { padding-bottom: env(safe-area-inset-bottom); }
+    .top-safe { padding-top: env(safe-area-inset-top); }
+
+    /* Animations */
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(1); opacity: 0.8; }
+      100% { transform: scale(1.4); opacity: 0; }
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes scaleIn {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    
+    .slide-up { animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .fade-in { animation: fadeIn 0.25s ease-out; }
+    .scale-in { animation: scaleIn 0.2s ease-out; }
+    
+    .skeleton {
+      background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 6px;
+    }
+
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid rgba(59,130,246,0.2);
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    /* Scanner overlay */
+    #qr-reader video { border-radius: 12px; width: 100% !important; }
+    #qr-reader { border: none !important; padding: 0 !important; }
+    #qr-reader__scan_region { border-radius: 12px; overflow: hidden; }
+    #qr-reader__dashboard { display: none !important; }
+    
+    /* Scan corner brackets */
+    .scan-corner {
+      position: absolute;
+      width: 24px; height: 24px;
+      border-color: #60a5fa;
+      border-style: solid;
+    }
+    .scan-corner.tl { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+    .scan-corner.tr { top: 0; right: 0; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
+    .scan-corner.bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
+    .scan-corner.br { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+    
+    @keyframes scanLine {
+      0%, 100% { transform: translateY(0); opacity: 1; }
+      50% { transform: translateY(180px); opacity: 0.5; }
+    }
+    .scan-line { animation: scanLine 2s ease-in-out infinite; }
+
+    /* Toast */
+    #toast-container { position: fixed; top: 1rem; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; width: calc(100% - 2rem); max-width: 400px; pointer-events: none; }
+    
+    /* Card hover */
+    .stock-card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .stock-card:active { transform: scale(0.97); }
+    
+    /* Bottom sheet */
+    .sheet-overlay { background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
+    
+    /* Input focus ring */
+    .input-field {
+      background: #1e293b;
+      border: 1.5px solid #334155;
+      color: #e2e8f0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 16px; /* prevent zoom on iOS */
+      width: 100%;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    .input-field:focus { border-color: #3b82f6; }
+    .input-field::placeholder { color: #475569; }
+
+    /* Quantity pill */
+    .qty-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    /* Tab active indicator */
+    .tab-btn.active { color: #60a5fa; }
+    .tab-btn.active .tab-icon-bg { background: rgba(59,130,246,0.15); }
+    
+    /* Image preview */
+    .img-preview { object-fit: cover; background: #1e293b; }
+    
+    /* Low stock indicator */
+    @keyframes lowPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .low-stock-dot { animation: lowPulse 2s ease-in-out infinite; }
+
+    /* Drag handle */
+    .drag-handle { width: 36px; height: 4px; background: #475569; border-radius: 2px; margin: 0 auto; }
+
+    /* Number input no arrows */
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+    input[type=number] { -moz-appearance: textfield; }
+  </style>
+</head>
+<body class="bg-surface-900 text-slate-100 h-full select-none">
+
+<!-- ─── APP SHELL ─── -->
+<div id="app" class="flex flex-col h-screen max-w-lg mx-auto relative overflow-hidden">
+
+  <!-- TOP BAR -->
+  <header id="top-bar" class="flex-none bg-surface-900/95 backdrop-blur-md border-b border-surface-800 px-4 pt-4 pb-3 top-safe z-30">
+    <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center">
+          <i data-lucide="package" class="w-4 h-4 text-white"></i>
+        </div>
+        <span class="font-semibold text-base tracking-tight">StockFlow</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="openNotifications()" class="w-9 h-9 rounded-full bg-surface-800 flex items-center justify-center relative">
+          <i data-lucide="bell" class="w-4 h-4 text-slate-400"></i>
+          <span id="notif-badge" class="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full text-[9px] flex items-center justify-center font-bold hidden">0</span>
+        </button>
+        <button onclick="openSettings()" class="w-9 h-9 rounded-full bg-surface-800 flex items-center justify-center">
+          <i data-lucide="settings" class="w-4 h-4 text-slate-400"></i>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Search bar (shown on dashboard) -->
+    <div id="search-bar" class="relative">
+      <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none"></i>
+      <input type="search" id="search-input" placeholder="ค้นหาสินค้า หรือ barcode…"
+        class="input-field pl-9 pr-10 py-2.5 text-sm"
+        oninput="debounceSearch(this.value)" />
+      <button id="search-clear" onclick="clearSearch()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hidden">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- PAGE CONTENT -->
+  <main id="page-content" class="flex-1 overflow-y-auto safe-bottom">
+    <!-- Pages rendered here by JS -->
+  </main>
+
+  <!-- BOTTOM NAV -->
+  <nav class="flex-none fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-lg bg-surface-900/95 backdrop-blur-md border-t border-surface-800 z-30 nav-safe">
+    <div class="grid grid-cols-4 h-16">
+      <button class="tab-btn active flex flex-col items-center justify-center gap-1" onclick="navigate('dashboard')" id="tab-dashboard">
+        <span class="tab-icon-bg w-8 h-8 rounded-xl flex items-center justify-center">
+          <i data-lucide="layout-grid" class="w-4 h-4"></i>
+        </span>
+        <span class="text-[10px] font-medium">สินค้า</span>
+      </button>
+      <button class="tab-btn flex flex-col items-center justify-center gap-1" onclick="navigate('shopping')" id="tab-shopping">
+        <span class="tab-icon-bg w-8 h-8 rounded-xl flex items-center justify-center">
+          <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+        </span>
+        <span class="text-[10px] font-medium">ซื้อของ</span>
+      </button>
+      <button class="tab-btn flex flex-col items-center justify-center gap-1" onclick="openScanner('stock')" id="tab-scan">
+        <span class="tab-icon-bg w-8 h-8 rounded-xl bg-brand-600 flex items-center justify-center">
+          <i data-lucide="scan-barcode" class="w-4 h-4 text-white"></i>
+        </span>
+        <span class="text-[10px] font-medium text-brand-400">สแกน</span>
+      </button>
+      <button class="tab-btn flex flex-col items-center justify-center gap-1" onclick="navigate('history')" id="tab-history">
+        <span class="tab-icon-bg w-8 h-8 rounded-xl flex items-center justify-center">
+          <i data-lucide="clock" class="w-4 h-4"></i>
+        </span>
+        <span class="text-[10px] font-medium">ประวัติ</span>
+      </button>
+    </div>
+  </nav>
+
+</div><!-- /app -->
+
+<!-- ═══════════════════════════════════════ -->
+<!-- OVERLAYS / MODALS / SHEETS              -->
+<!-- ═══════════════════════════════════════ -->
+
+<!-- Scanner Sheet -->
+<div id="scanner-sheet" class="fixed inset-0 z-50 hidden">
+  <div class="sheet-overlay absolute inset-0" onclick="closeScanner()"></div>
+  <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-lg bg-surface-850 rounded-t-3xl slide-up">
+    <div class="p-4">
+      <div class="drag-handle mb-4"></div>
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 id="scanner-title" class="font-semibold text-lg">สแกน Barcode</h2>
+          <p id="scanner-subtitle" class="text-xs text-slate-400 mt-0.5">จ่อ Barcode ที่กล้อง</p>
+        </div>
+        <button onclick="closeScanner()" class="w-8 h-8 rounded-full bg-surface-800 flex items-center justify-center">
+          <i data-lucide="x" class="w-4 h-4 text-slate-400"></i>
+        </button>
+      </div>
+      
+      <!-- Camera view -->
+      <div class="relative rounded-2xl overflow-hidden bg-black mb-4" style="aspect-ratio:1/1;">
+        <div id="qr-reader" class="w-full h-full"></div>
+        <!-- Overlay corners -->
+        <div class="absolute inset-0 pointer-events-none">
+          <div class="absolute inset-8">
+            <div class="scan-corner tl"></div>
+            <div class="scan-corner tr"></div>
+            <div class="scan-corner bl"></div>
+            <div class="scan-corner br"></div>
+            <div class="scan-line absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-brand-400 to-transparent top-0"></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Manual input -->
+      <div class="flex gap-2 mb-4">
+        <input type="text" id="manual-barcode" placeholder="หรือพิมพ์รหัส Barcode ด้วยตนเอง…"
+          class="input-field flex-1" />
+        <button onclick="submitManualBarcode()" class="w-12 h-12 bg-brand-600 rounded-xl flex items-center justify-center flex-none">
+          <i data-lucide="arrow-right" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="nav-safe"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Product Sheet -->
+<div id="product-sheet" class="fixed inset-0 z-50 hidden">
+  <div class="sheet-overlay absolute inset-0" onclick="closeProductSheet()"></div>
+  <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-lg bg-surface-850 rounded-t-3xl slide-up max-h-[92vh] flex flex-col">
+    <div class="flex-none p-4 border-b border-surface-800">
+      <div class="drag-handle mb-3"></div>
+      <div class="flex items-center justify-between">
+        <h2 id="product-sheet-title" class="font-semibold text-lg">เพิ่มสินค้าใหม่</h2>
+        <button onclick="closeProductSheet()" class="w-8 h-8 rounded-full bg-surface-800 flex items-center justify-center">
+          <i data-lucide="x" class="w-4 h-4 text-slate-400"></i>
+        </button>
+      </div>
+    </div>
+    <div class="flex-1 overflow-y-auto p-4 space-y-3">
+      <input type="hidden" id="product-id" />
+      
+      <!-- Image upload -->
+      <div class="flex gap-3 items-start">
+        <div id="product-img-preview" class="w-20 h-20 rounded-xl bg-surface-800 flex items-center justify-center flex-none overflow-hidden cursor-pointer" onclick="triggerImageUpload()">
+          <i data-lucide="camera" class="w-6 h-6 text-slate-500" id="cam-icon"></i>
+          <img id="product-img-el" class="w-full h-full img-preview hidden" />
+        </div>
+        <div class="flex-1 space-y-2">
+          <input type="text" id="product-name" placeholder="ชื่อสินค้า *" class="input-field" />
+          <input type="text" id="product-category" placeholder="หมวดหมู่" class="input-field" />
+        </div>
+      </div>
+      <input type="hidden" id="product-img-data" />
+      <input type="file" id="img-file-input" accept="image/*" capture="environment" class="hidden" onchange="handleImageSelect(event)" />
+      
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="text-xs text-slate-400 mb-1 block">จำนวนคงเหลือ *</label>
+          <input type="number" id="product-qty" placeholder="0" class="input-field" />
+        </div>
+        <div>
+          <label class="text-xs text-slate-400 mb-1 block">แจ้งเตือนเมื่อต่ำกว่า</label>
+          <input type="number" id="product-low" placeholder="5" class="input-field" />
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="text-xs text-slate-400 mb-1 block">ราคา (บาท)</label>
+          <input type="number" id="product-price" placeholder="0.00" class="input-field" />
+        </div>
+        <div>
+          <label class="text-xs text-slate-400 mb-1 block">หน่วย</label>
+          <input type="text" id="product-unit" placeholder="ชิ้น, กล่อง…" class="input-field" />
+        </div>
+      </div>
+      
+      <div>
+        <label class="text-xs text-slate-400 mb-1 block">Barcode</label>
+        <div class="flex gap-2">
+          <input type="text" id="product-barcode" placeholder="รหัส Barcode" class="input-field flex-1 font-mono" />
+          <button onclick="openScanner('fill-barcode')" class="w-12 h-12 bg-surface-800 rounded-xl flex items-center justify-center flex-none border border-surface-700">
+            <i data-lucide="scan-barcode" class="w-5 h-5 text-brand-400"></i>
+          </button>
+        </div>
+      </div>
+      
+      <div>
+        <label class="text-xs text-slate-400 mb-1 block">หมายเหตุ</label>
+        <textarea id="product-note" placeholder="รายละเอียดเพิ่มเติม…" class="input-field resize-none" rows="2"></textarea>
+      </div>
+    </div>
+    <div class="flex-none p-4 border-t border-surface-800">
+      <button onclick="saveProduct()" class="w-full h-12 bg-brand-600 hover:bg-brand-500 active:bg-brand-700 rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors">
+        <i data-lucide="save" class="w-4 h-4"></i>
+        <span id="save-btn-text">บันทึกสินค้า</span>
+      </button>
+    </div>
+    <div class="nav-safe flex-none"></div>
+  </div>
+</div>
+
+<!-- Quick Update Sheet -->
+<div id="quick-update-sheet" class="fixed inset-0 z-50 hidden">
+  <div class="sheet-overlay absolute inset-0" onclick="closeQuickUpdate()"></div>
+  <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-lg bg-surface-850 rounded-t-3xl slide-up">
+    <div class="p-4">
+      <div class="drag-handle mb-4"></div>
+      <div class="flex gap-3 items-center mb-5">
+        <div id="qu-img" class="w-14 h-14 rounded-xl bg-surface-800 flex items-center justify-center overflow-hidden flex-none">
+          <i data-lucide="package" class="w-6 h-6 text-slate-500" id="qu-img-icon"></i>
+          <img id="qu-img-el" class="w-full h-full img-preview hidden" />
+        </div>
+        <div class="min-w-0">
+          <h3 id="qu-name" class="font-semibold truncate">ชื่อสินค้า</h3>
+          <p id="qu-barcode" class="text-xs text-slate-400 font-mono mt-0.5"></p>
+          <div class="flex items-center gap-2 mt-1">
+            <span class="text-xs text-slate-400">คงเหลือ:</span>
+            <span id="qu-current" class="text-sm font-bold text-brand-400 font-mono">0</span>
+            <span id="qu-unit" class="text-xs text-slate-400"></span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Qty buttons -->
+      <div class="flex items-center justify-between gap-3 mb-4">
+        <button onclick="quickAdjust(-10)" class="flex-1 h-12 bg-surface-800 rounded-xl font-mono font-bold text-red-400 text-sm border border-surface-700 active:bg-surface-700">−10</button>
+        <button onclick="quickAdjust(-1)" class="flex-1 h-12 bg-red-500/20 rounded-xl font-bold text-red-400 border border-red-500/30 active:bg-red-500/30 flex items-center justify-center">
+          <i data-lucide="minus" class="w-5 h-5"></i>
+        </button>
+        <div class="flex-none text-center">
+          <input type="number" id="qu-new-qty" class="w-20 h-12 bg-surface-800 border border-brand-500/50 rounded-xl text-center font-mono font-bold text-lg text-brand-400 outline-none" />
+        </div>
+        <button onclick="quickAdjust(1)" class="flex-1 h-12 bg-green-500/20 rounded-xl font-bold text-green-400 border border-green-500/30 active:bg-green-500/30 flex items-center justify-center">
+          <i data-lucide="plus" class="w-5 h-5"></i>
+        </button>
+        <button onclick="quickAdjust(10)" class="flex-1 h-12 bg-surface-800 rounded-xl font-mono font-bold text-green-400 text-sm border border-surface-700 active:bg-surface-700">+10</button>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-2 mb-4">
+        <button onclick="closeQuickUpdate()" class="h-12 bg-surface-800 rounded-xl font-medium border border-surface-700 active:bg-surface-700">ยกเลิก</button>
+        <button onclick="confirmQuickUpdate()" class="h-12 bg-brand-600 rounded-xl font-semibold active:bg-brand-700">บันทึก</button>
+      </div>
+      <div class="nav-safe"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Product Detail Sheet -->
+<div id="detail-sheet" class="fixed inset-0 z-50 hidden">
+  <div class="sheet-overlay absolute inset-0" onclick="closeDetailSheet()"></div>
+  <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-lg bg-surface-850 rounded-t-3xl slide-up max-h-[85vh] flex flex-col">
+    <div class="flex-none p-4">
+      <div class="drag-handle mb-4"></div>
+      <div id="detail-content" class="space-y-4"></div>
+    </div>
+    <div class="flex-none p-4 border-t border-surface-800">
+      <div class="grid grid-cols-3 gap-2">
+        <button onclick="editFromDetail()" class="h-11 bg-surface-800 rounded-xl text-sm font-medium flex items-center justify-center gap-1.5 border border-surface-700">
+          <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> แก้ไข
+        </button>
+        <button onclick="addToShoppingFromDetail()" class="h-11 bg-surface-800 rounded-xl text-sm font-medium flex items-center justify-center gap-1.5 border border-surface-700">
+          <i data-lucide="shopping-cart" class="w-3.5 h-3.5"></i> ซื้อของ
+        </button>
+        <button onclick="quickUpdateFromDetail()" class="h-11 bg-brand-600 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5">
+          <i data-lucide="zap" class="w-3.5 h-3.5"></i> อัปเดต
+        </button>
+      </div>
+    </div>
+    <div class="nav-safe flex-none"></div>
+  </div>
+</div>
+
+<!-- Confirm Delete -->
+<div id="confirm-modal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4">
+  <div class="sheet-overlay absolute inset-0" onclick="closeConfirmModal()"></div>
+  <div class="relative bg-surface-800 rounded-2xl p-5 w-full max-w-sm scale-in">
+    <h3 id="confirm-title" class="font-semibold text-base mb-2">ยืนยันการลบ</h3>
+    <p id="confirm-msg" class="text-sm text-slate-400 mb-5">แน่ใจว่าต้องการลบรายการนี้?</p>
+    <div class="grid grid-cols-2 gap-2">
+      <button onclick="closeConfirmModal()" class="h-11 bg-surface-700 rounded-xl font-medium">ยกเลิก</button>
+      <button id="confirm-ok-btn" class="h-11 bg-red-500 rounded-xl font-semibold">ลบ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Sheet -->
+<div id="settings-sheet" class="fixed inset-0 z-50 hidden">
+  <div class="sheet-overlay absolute inset-0" onclick="closeSettings()"></div>
+  <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-lg bg-surface-850 rounded-t-3xl slide-up">
+    <div class="p-4">
+      <div class="drag-handle mb-4"></div>
+      <h2 class="font-semibold text-lg mb-4">ตั้งค่า</h2>
+      
+      <div class="space-y-2 mb-4">
+        <div class="bg-surface-800 rounded-xl p-4">
+          <p class="text-xs text-slate-400 mb-1">Supabase URL</p>
+          <input type="text" id="setting-supabase-url" placeholder="https://xxx.supabase.co" class="input-field text-sm" />
+        </div>
+        <div class="bg-surface-800 rounded-xl p-4">
+          <p class="text-xs text-slate-400 mb-1">Supabase Anon Key</p>
+          <input type="password" id="setting-supabase-key" placeholder="eyJ…" class="input-field text-sm" />
+        </div>
+        <div class="bg-surface-800 rounded-xl p-4">
+          <p class="text-xs text-slate-400 mb-1">แจ้งเตือนเมื่อสต็อกต่ำกว่า (default)</p>
+          <input type="number" id="setting-low-threshold" placeholder="5" class="input-field" />
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-2 mb-2">
+        <button onclick="clearAllData()" class="h-11 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl text-sm font-medium">ล้างข้อมูลทั้งหมด</button>
+        <button onclick="saveSettings()" class="h-11 bg-brand-600 rounded-xl font-semibold">บันทึก</button>
+      </div>
+      <div class="nav-safe"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- FAB (Add Product)                       -->
+<!-- ═══════════════════════════════════════ -->
+<button id="fab" onclick="addNewProduct()" 
+  class="fixed bottom-20 right-4 w-14 h-14 bg-brand-600 rounded-2xl shadow-lg shadow-brand-900/50 flex items-center justify-center z-20 transition-transform active:scale-95"
+  style="max-width: calc(100% - 1rem); left: auto; right: max(1rem, calc(50% - 200px + 1rem))">
+  <i data-lucide="plus" class="w-6 h-6 text-white"></i>
+</button>
+
+<script src="app.js"></script>
+</body>
+</html>
