@@ -472,24 +472,71 @@
 <!-- Settings Sheet -->
 <div id="settings-sheet" class="fixed inset-0 z-50 hidden">
   <div class="sheet-overlay absolute inset-0" onclick="closeSettings()"></div>
-  <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-lg bg-surface-850 rounded-t-3xl slide-up">
-    <div class="p-4">
-      <div class="drag-handle mb-4"></div>
-      <h2 class="font-semibold text-lg mb-4">ตั้งค่า</h2>
-      
-      <div class="space-y-2 mb-4">
-        <div class="bg-surface-800 rounded-xl p-4">
-          <p class="text-xs text-slate-400 mb-1">แจ้งเตือนเมื่อสต็อกต่ำกว่า (default)</p>
-          <input type="number" id="setting-low-threshold" placeholder="5" class="input-field" />
-        </div>
+  <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-lg bg-surface-850 rounded-t-3xl slide-up max-h-[92vh] flex flex-col">
+    <div class="flex-none p-4 border-b border-surface-800">
+      <div class="drag-handle mb-3"></div>
+      <div class="flex items-center justify-between">
+        <h2 class="font-semibold text-lg">ตั้งค่า</h2>
+        <button onclick="closeSettings()" class="w-8 h-8 rounded-full bg-surface-800 flex items-center justify-center">
+          <i data-lucide="x" class="w-4 h-4 text-slate-400"></i>
+        </button>
       </div>
-      
-      <div class="grid grid-cols-2 gap-2 mb-2">
-        <button onclick="clearAllData()" class="h-11 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl text-sm font-medium">ล้างข้อมูลทั้งหมด</button>
-        <button onclick="saveSettings()" class="h-11 bg-brand-600 rounded-xl font-semibold">บันทึก</button>
-      </div>
-      <div class="nav-safe"></div>
     </div>
+    <div class="flex-1 overflow-y-auto p-4 space-y-3">
+
+      <!-- Supabase connection status -->
+      <div class="bg-surface-800 rounded-xl p-3 flex items-center gap-3 border border-surface-700">
+        <span id="sync-dot-settings" class="w-2 h-2 rounded-full bg-slate-500 flex-none"></span>
+        <div class="flex-1 min-w-0">
+          <p id="sb-conn-label" class="text-xs font-medium text-slate-300">ยังไม่ได้เชื่อมต่อ</p>
+          <p id="sb-url-display" class="text-[10px] text-slate-500 truncate font-mono mt-0.5">—</p>
+        </div>
+        <button onclick="testConnection()" class="flex-none text-[11px] text-brand-400 font-semibold bg-brand-600/10 border border-brand-600/30 px-2.5 py-1 rounded-lg">ทดสอบ</button>
+      </div>
+
+      <!-- Supabase URL -->
+      <div>
+        <label class="text-xs text-slate-400 mb-1.5 block">Supabase URL</label>
+        <input type="url" id="setting-supabase-url"
+          placeholder="https://xxxx.supabase.co"
+          class="input-field font-mono text-sm"
+          autocomplete="off" autocorrect="off" spellcheck="false" />
+      </div>
+
+      <!-- Anon Key -->
+      <div>
+        <label class="text-xs text-slate-400 mb-1.5 block">Anon Key <span class="text-slate-600">(Settings → API → anon public)</span></label>
+        <div class="relative">
+          <input type="password" id="setting-supabase-key"
+            placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…"
+            class="input-field font-mono text-sm pr-16"
+            autocomplete="off" />
+          <button onclick="toggleKeyVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-500 font-medium">แสดง</button>
+        </div>
+        <p class="text-[10px] text-slate-600 mt-1">⚠ ต้องขึ้นต้นด้วย eyJ… ไม่ใช่ sb_publishable_…</p>
+      </div>
+
+      <!-- Low threshold -->
+      <div>
+        <label class="text-xs text-slate-400 mb-1.5 block">แจ้งเตือนเมื่อสต็อกต่ำกว่า (ชิ้น)</label>
+        <input type="number" id="setting-low-threshold" placeholder="5" class="input-field" />
+      </div>
+
+    </div>
+    <div class="flex-none p-4 border-t border-surface-800 space-y-2">
+      <button onclick="saveSettings()" class="w-full h-12 bg-brand-600 rounded-xl font-semibold flex items-center justify-center gap-2 active:bg-brand-700">
+        <i data-lucide="save" class="w-4 h-4"></i> บันทึกและเชื่อมต่อ
+      </button>
+      <div class="grid grid-cols-2 gap-2">
+        <button onclick="clearLocalCache()" class="h-11 bg-surface-800 border border-surface-700 text-slate-300 rounded-xl text-xs font-medium active:bg-surface-700">
+          ล้าง Local Cache
+        </button>
+        <button onclick="clearAllData()" class="h-11 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl text-xs font-medium active:bg-red-500/20">
+          ลบข้อมูลทั้งหมด
+        </button>
+      </div>
+    </div>
+    <div class="nav-safe flex-none"></div>
   </div>
 </div>
 
